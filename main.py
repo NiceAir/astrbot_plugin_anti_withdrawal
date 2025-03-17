@@ -69,7 +69,7 @@ class MyPlugin(Star):
 
         data = json.dumps(msg)
         logger.info(f"raw_message:{raw_message}")
-        logger.info(f"parse_data:{data}")
+        logger.info("parse_data:", data)
         return raw_message
 
 
