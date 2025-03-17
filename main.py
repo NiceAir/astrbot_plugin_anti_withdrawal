@@ -64,6 +64,7 @@ class MyPlugin(Star):
         sender_id = event.get_sender_id()
         if group_id == "":
             yield event.plain_result("收到了一条私聊消息。")
+            return
         yield event.plain_result("收到了一条消息。")
         #if event.get_platform_name() == "gewechat":
 
