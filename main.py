@@ -7,6 +7,7 @@ from astrbot.api.all import event_message_type, EventMessageType
 from astrbot.core.platform import AstrBotMessage
 from collections import deque
 from datetime import datetime, timedelta
+from astrbot.core.platform.sources.gewechat.gewechat_platform_adapter import GewechatPlatformAdapter,GewechatPlatformEvent
 
 
 def custom_serializer(obj):
@@ -48,22 +49,24 @@ class MyPlugin(Star):
 
 
     # 在哪，谁，时间，发了啥消息
-    def parse_wechat_message(self, event: AstrMessageEvent):
-        platform = event.get_platform_name()
-        sender_id = event.get_sender_id()
-        sender_name = event.get_sender_name()
-        group_id = event.get_group_id()
-        raw_message = event.message_obj.raw_message
-        send_time = event.message_obj.timestamp
-
-        logger.info(f"{platform, sender_id, sender_name, group_id, raw_message, send_time}")
+    def parse_gewechat_message(self, event: AstrMessageEvent):
+        message_obj = event.message_obj
+        raw_message = message_obj.raw_message
+        logger.info(f"raw_message:{raw_message}")
+        return raw_message
 
 
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
-        self.parse_wechat_message(event)
-        logger.info(event.message_obj)
+        raw_message = self.parse_gewechat_message(event)
+        group_id = event.get_group_id()
+        sender_name = event.get_sender_name()
+        sender_id = event.get_sender_id()
+        if group_id == "":
+            yield event.plain_result("收到了一条私聊消息。")
         yield event.plain_result("收到了一条消息。")
+        #if event.get_platform_name() == "gewechat":
+
 
     async def terminate(self):
         '''可选择实现 terminate 函数，当插件被卸载/停用时会调用。'''
