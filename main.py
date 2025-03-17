@@ -49,10 +49,27 @@ class MyPlugin(Star):
 
 
     # 在哪，谁，时间，发了啥消息
-    def parse_gewechat_message(self, event: AstrMessageEvent):
-        message_obj = event.message_obj
-        raw_message = message_obj.raw_message
+    def parse_gewechat_message(self, event: AstrMessageEvent) ->{}:
+        raw_message = event.message_obj.raw_message
+
+
+        msg_id = raw_message.get('MsgId', 1)
+        msg_type = raw_message.get('MsgType', 1)
+        content = raw_message.get('Content', "")
+
+        msg = {
+            "group_id":event.get_group_id(),
+            "sender_name":event.get_sender_name(),
+            "sender_id":event.get_sender_id(),
+            "msg_id":msg_id,
+            "msg_type":msg_type,
+            "content": content,
+
+        }
+
+        data = json.dump(msg)
         logger.info(f"raw_message:{raw_message}")
+        logger.info(f"parse_data:{data}")
         return raw_message
 
 
@@ -65,7 +82,7 @@ class MyPlugin(Star):
         if group_id == "":
             yield event.plain_result("收到了一条私聊消息。")
             return
-        yield event.plain_result("收到了一条消息。")
+        yield event.plain_result("收到了一条群聊消息。")
         #if event.get_platform_name() == "gewechat":
 
 
