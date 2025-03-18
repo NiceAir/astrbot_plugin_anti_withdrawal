@@ -16,7 +16,7 @@ class MyPlugin(Star):
         super().__init__(context)
         self.message_queue = RecentMessageQueue()
         self.message_parser = MessageParser()
-        self.manager = SendManager(os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_manager_file.json"))
+        self.manager = SendManager(context, os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_manager_file.json"))
 
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
@@ -28,6 +28,7 @@ class MyPlugin(Star):
             simple_msg = self.message_parser.parse_message_obj(event.message_obj.raw_message)
             if simple_msg['is_withdrawal']:
                 withdrawal_info = self.message_queue.find_message(simple_msg['withdrawal_msgid'])
+                await self.manager.deal_send_withdrawal(self.message_parser.parse_send_message(withdrawal_info))
                 logger.info(f"withdrawal_info:{json.dumps(withdrawal_info, ensure_ascii=False)}")
             else:
                 self.message_queue.add_message(simple_msg, event)

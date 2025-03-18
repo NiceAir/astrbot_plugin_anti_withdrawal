@@ -3,6 +3,8 @@ from astrbot.api.event import  AstrMessageEvent
 from astrbot.core.platform import AstrBotMessage
 import xml.etree.ElementTree as ET
 import time
+import logging
+import re
 
 class MessageParser(AstrBotMessage):
     def __init__(self):
@@ -16,11 +18,20 @@ class MessageParser(AstrBotMessage):
             "sender_id": event.get_sender_id(),
             "sender_name": event.get_sender_name(),
             "msg_id": raw_message.get('MsgId', 0),
+            "msg_type": raw_message.get('MsgType', 0),
             "content": tmp_dict.get('content', 0),
             "replacemsg": tmp_dict.get('replacemsg', ""),
             'timestamp': time.time(),
         }
         return msg
+
+    def parse_send_message(self, msg_dict) -> {}:
+        content = msg_dict['replacemsg']
+        if msg_dict['msg_type'] == 1:
+            content = content + "\n"+msg_dict['content']
+        return {
+            "content": content
+        }
 
 
     def parse_message_obj(self, raw_message: object) -> {}:
@@ -28,19 +39,26 @@ class MessageParser(AstrBotMessage):
             "is_withdrawal": False,
         }
 
-        msg_type = raw_message.get('MsgType', 0)
+        try:
+            msg_type = raw_message.get('MsgType', 0)
 
-        content = raw_message.get("Content", "")
-        data = content.get('string', "")
-        if msg_type == 10002:
-            root = ET.fromstring(data)
-            if root.attrib.get('type') == 'revokemsg':
-                msg['is_withdrawal'] = True
-                msg['withdrawal_msgid'] = root.find('.//msgid').text
-                msg['replacemsg'] = root.find('.//replacemsg').text
-        else:
-            msg['content'] = data
+            content = raw_message.get("Content", "")
+            data = content.get('string', "")
+            if msg_type == 10002:
+                if re.match(r'^.*?:\n<sysmsg', data):
+                    split_index = data.find('<')
+                    data = data[split_index:]
 
-        msg['msg_type'] = msg_type
+                root = ET.fromstring(data)
+                if root.attrib.get('type') == 'revokemsg':
+                    msg['is_withdrawal'] = True
+                    msg['withdrawal_msgid'] = root.find('.//msgid').text
+                    msg['replacemsg'] = root.find('.//replacemsg').text
+            else:
+                msg['content'] = data
+
+            msg['msg_type'] = msg_type
+        except Exception as e:
+            logging.error(e)
 
         return msg

@@ -2,13 +2,15 @@ from typing import AsyncGenerator
 from astrbot.api import logger
 import json
 import os
+import traceback
 from astrbot.api.event import AstrMessageEvent, MessageEventResult
 from data.plugins.astrbot_plugin_anti_withdrawal.error import command_error_handler
 
 
 class SendManager:
-    def __init__(self, user_manager_file):
+    def __init__(self, context, user_manager_file):
         super().__init__()
+        self.context = context
         self.user_manager_file = user_manager_file
         self.send_targets = {}
         self.load_manager()
@@ -84,3 +86,28 @@ class SendManager:
             return
         self.cancel_send_target(event)
         yield event.plain_result("好的, 已取消")
+
+
+    @command_error_handler
+    async def deal_send_withdrawal(self, text, img) -> None:
+        try:
+            # 创建消息段列表
+            from astrbot.api.message_components import Plain, Image
+            message_segments = [Plain(text), Image(img)]
+
+            # 使用send_message发送消息
+            from astrbot.api.event import MessageChain
+            message_chain = MessageChain(message_segments)
+
+            for _, session in self.send_targets.items():
+                try:
+                    await self.context.send_message(session, message_chain)
+                    logger.info(f"已向 {session} 被撤回的消息")
+                except Exception as e:
+                    logger.error(f"向 {session} 发送消息失败：{str(e)}")
+                    logger.error(traceback.format_exc())
+                    return
+
+        except Exception as e:
+            logger.error(f"执行任务时出错: {str(e)}")
+            logger.error(traceback.format_exc())
