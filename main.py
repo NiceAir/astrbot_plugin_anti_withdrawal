@@ -25,16 +25,14 @@ class MyPlugin(Star):
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
         # 如果是管理者，发的消息，那么不处理。
-        try:
-            if event.get_platform_name() == "gewechat":
-                simple_msg =   self.message_parser.parse_message_obj(event.message_obj.raw_message)
-                if simple_msg['is_withdrawal']:
-                    logger.info("撤回了一条消息")
-                else:
-                    self.message_queue.add_message(event)
+        if event.get_platform_name() == "gewechat":
+            simple_msg = self.message_parser.parse_message_obj(event.message_obj.raw_message)
+            if simple_msg['is_withdrawal']:
+                withdrawal_info = self.message_queue.find_message(simple_msg['withdrawal_msgid'])
+                logger.info(f"withdrawal_info:{json.dumps(withdrawal_info, ensure_ascii=False)}")
+                yield event.plain_result("撤回了一条消息。")
+            else:
+                self.message_queue.add_message(simple_msg, event)
+                yield event.plain_result("收到了一条消息。")
 
-            yield event.plain_result("收到了一条消息。")
-
-        except Exception as e:
-            logger.error(f"{e}")
-
+        self.message_queue.print_msg_queue()
