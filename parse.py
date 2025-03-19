@@ -5,6 +5,7 @@ import time
 import logging
 import re
 from datetime import datetime
+from astrbot.core import sp
 
 
 class MessageParser(AstrBotMessage):
@@ -36,6 +37,7 @@ class MessageParser(AstrBotMessage):
             content = ""
             group_id = history_msg['group_id']
             if group_id != "":
+                #     appid = sp.get(f"gewechat-appid-{self.nickname}")
                 content = "在群聊" + group_id + "中"
 
             dt_object = datetime.fromtimestamp(history_msg['timestamp'])

@@ -1,19 +1,35 @@
 import json
+
+from data.plugins.astrbot_plugin_anti_withdrawal.gewechat import GewechatManager
 from data.plugins.astrbot_plugin_anti_withdrawal.send_manager import SendManager
 from data.plugins.astrbot_plugin_anti_withdrawal.parse import MessageParser
 from data.plugins.astrbot_plugin_anti_withdrawal.rencent_message import RecentMessageQueue
 from astrbot.api.event import filter, AstrMessageEvent
 from astrbot.api.star import Context, Star, register
+from astrbot.core.config import AstrBotConfig
 from astrbot.api import logger
 from astrbot.api.all import event_message_type, EventMessageType
 import os
 from astrbot.api.event.filter import permission_type, PermissionType
 
 
+def get_nickname(conf: AstrBotConfig) -> str:
+    platforms = conf.get('platform', [])
+    for p in platforms:
+        type = p.get('type', "")
+        if type == "gewechat":
+            nickname = p.get('nickname', "")
+            return nickname
+
+    return ""
+
+
 @register("anti_withdrawal", "NiceAir", "一个简单的微信防撤回插件", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
+
+        self.gewechat_manager = GewechatManager()
         self.message_queue = RecentMessageQueue()
         self.message_parser = MessageParser()
         self.manager = SendManager(context,
@@ -26,6 +42,8 @@ class MyPlugin(Star):
             return
         try:
             if event.get_platform_name() == "gewechat":
+                self.gewechat_manager.get_group_name_from_gewechat(event, event.get_group_id())
+
                 simple_msg = self.message_parser.parse_message_obj(event.is_private_chat(),
                                                                    event.message_obj.raw_message)
 
