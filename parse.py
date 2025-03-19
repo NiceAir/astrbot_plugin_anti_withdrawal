@@ -75,8 +75,10 @@ class MessageParser(AstrBotMessage):
                         msg['withdrawal_msgid'] = root.find('.//msgid').text
                     else:
                         msg['withdrawal_msgid'] = root.find('.//newmsgid').text
-            else:
+            elif msg_type == 1:
                 msg['content'] = data
+            else:
+                msg['content'] = "消息类型:" + str(msg_type) + "无法解析"
 
             msg['msg_type'] = msg_type
         except Exception as e:
