@@ -32,18 +32,17 @@ class MessageParser(AstrBotMessage):
         }
         return msg
 
-    def parse_send_message(self, history_msg, withdrawal_info) -> {}:
+    def parse_send_message(self, history_msg, withdrawal_info, group_name) -> {}:
         try:
-            content = ""
-            group_id = history_msg['group_id']
-            if group_id != "":
-                #     appid = sp.get(f"gewechat-appid-{self.nickname}")
-                content = "在群聊" + group_id + "中"
-
             dt_object = datetime.fromtimestamp(history_msg['timestamp'])
             readable_time = dt_object.strftime("%Y-%m-%d %H:%M:%S.%f")
 
-            content = content + "\n" + withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
+
+            if group_name != "":
+                content = "在群聊 " + group_name + " 中"
+                content = content + "\n" + withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
+            else:
+                content = withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
 
             if history_msg['msg_type'] == 1:
                 content = content + "\n" + history_msg['content']
