@@ -22,11 +22,13 @@ class MyPlugin(Star):
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
         # 如果是管理者发的消息，那么不记录不处理
-        # if self.manager.is_admin(event):
-        #     return
+        if event.is_admin():
+            return
         try:
             if event.get_platform_name() == "gewechat":
-                simple_msg = self.message_parser.parse_message_obj(event.message_obj.raw_message)
+                simple_msg = self.message_parser.parse_message_obj(event.is_private_chat(),
+                                                                   event.message_obj.raw_message)
+
                 if simple_msg['is_withdrawal']:
                     history_msg = self.message_queue.find_message(simple_msg['withdrawal_msgid'])
                     out_put = self.message_parser.parse_send_message(history_msg, simple_msg)
@@ -34,8 +36,7 @@ class MyPlugin(Star):
                     logger.info(f"withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                 else:
                     self.message_queue.add_message(simple_msg, event)
-
-            self.message_queue.print_msg_queue()
+                    self.message_queue.print_msg_queue()
         except Exception as e:
             logger.error(e)
 

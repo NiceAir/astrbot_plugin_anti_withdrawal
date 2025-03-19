@@ -14,11 +14,16 @@ class MessageParser(AstrBotMessage):
     # https://apifox.com/apidoc/shared-69ba62ca-cb7d-437e-85e4-6f3d3df271b1/doc-4801171#%E6%96%87%E6%9C%AC%E6%B6%88%E6%81%AF
     def parse_gewechat_message(self, tmp_dict, event: AstrMessageEvent) -> {}:
         raw_message = event.message_obj.raw_message
+        group_id = event.get_group_id()
+        msg_id = raw_message.get('MsgId', 0)
+        if group_id != "":
+            msg_id = raw_message.get('NewMsgId', 0)
+
         msg = {
-            "group_id": event.get_group_id(),
+            "group_id": group_id,
             "sender_id": event.get_sender_id(),
             "sender_name": event.get_sender_name(),
-            "msg_id": raw_message.get('MsgId', 0),
+            "msg_id": msg_id,
             "msg_type": raw_message.get('MsgType', 0),
             "content": tmp_dict.get('content', 0),
             "replacemsg": tmp_dict.get('replacemsg', ""),
@@ -28,10 +33,15 @@ class MessageParser(AstrBotMessage):
 
     def parse_send_message(self, history_msg, withdrawal_info) -> {}:
         try:
+            content = ""
+            group_id = history_msg['group_id']
+            if group_id != "":
+                content = "在群聊" + group_id + "中"
+
             dt_object = datetime.fromtimestamp(history_msg['timestamp'])
             readable_time = dt_object.strftime("%Y-%m-%d %H:%M:%S.%f")
 
-            content = withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
+            content = content + "\n" + withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
 
             if history_msg['msg_type'] == 1:
                 content = content + "\n" + history_msg['content']
@@ -42,7 +52,7 @@ class MessageParser(AstrBotMessage):
             logging.error(e)
             return {}
 
-    def parse_message_obj(self, raw_message: object) -> {}:
+    def parse_message_obj(self, is_private_chat, raw_message: object) -> {}:
         msg = {
             "is_withdrawal": False,
         }
@@ -60,8 +70,11 @@ class MessageParser(AstrBotMessage):
                 root = ET.fromstring(data)
                 if root.attrib.get('type') == 'revokemsg':
                     msg['is_withdrawal'] = True
-                    msg['withdrawal_msgid'] = root.find('.//msgid').text
                     msg['replacemsg'] = root.find('.//replacemsg').text
+                    if is_private_chat:
+                        msg['withdrawal_msgid'] = root.find('.//msgid').text
+                    else:
+                        msg['withdrawal_msgid'] = root.find('.//newmsgid').text
             else:
                 msg['content'] = data
 
