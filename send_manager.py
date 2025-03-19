@@ -87,13 +87,11 @@ class SendManager:
         self.cancel_send_target(event)
         yield event.plain_result("好的, 已取消")
 
-
-    @command_error_handler
     async def deal_send_withdrawal(self, text, img) -> None:
         try:
             # 创建消息段列表
             from astrbot.api.message_components import Plain, Image
-            message_segments = [Plain(text), Image(img)]
+            message_segments = [Plain(text)]
 
             # 使用send_message发送消息
             from astrbot.api.event import MessageChain
@@ -102,7 +100,7 @@ class SendManager:
             for _, session in self.send_targets.items():
                 try:
                     await self.context.send_message(session, message_chain)
-                    logger.info(f"已向 {session} 被撤回的消息")
+                    logger.info(f"已向 {session} 发送被撤回的消息")
                 except Exception as e:
                     logger.error(f"向 {session} 发送消息失败：{str(e)}")
                     logger.error(traceback.format_exc())

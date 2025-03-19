@@ -1,17 +1,18 @@
-
-from astrbot.api.event import  AstrMessageEvent
+from astrbot.api.event import AstrMessageEvent
 from astrbot.core.platform import AstrBotMessage
 import xml.etree.ElementTree as ET
 import time
 import logging
 import re
+from datetime import datetime
+
 
 class MessageParser(AstrBotMessage):
     def __init__(self):
         super().__init__()
 
     # https://apifox.com/apidoc/shared-69ba62ca-cb7d-437e-85e4-6f3d3df271b1/doc-4801171#%E6%96%87%E6%9C%AC%E6%B6%88%E6%81%AF
-    def parse_gewechat_message(self,  tmp_dict, event: AstrMessageEvent) -> {}:
+    def parse_gewechat_message(self, tmp_dict, event: AstrMessageEvent) -> {}:
         raw_message = event.message_obj.raw_message
         msg = {
             "group_id": event.get_group_id(),
@@ -25,14 +26,21 @@ class MessageParser(AstrBotMessage):
         }
         return msg
 
-    def parse_send_message(self, msg_dict) -> {}:
-        content = msg_dict['replacemsg']
-        if msg_dict['msg_type'] == 1:
-            content = content + "\n"+msg_dict['content']
-        return {
-            "content": content
-        }
+    def parse_send_message(self, history_msg, withdrawal_info) -> {}:
+        try:
+            dt_object = datetime.fromtimestamp(history_msg['timestamp'])
+            readable_time = dt_object.strftime("%Y-%m-%d %H:%M:%S.%f")
 
+            content = withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
+
+            if history_msg['msg_type'] == 1:
+                content = content + "\n" + history_msg['content']
+            return {
+                "content": content
+            }
+        except Exception as e:
+            logging.error(e)
+            return {}
 
     def parse_message_obj(self, raw_message: object) -> {}:
         msg = {
