@@ -1,5 +1,4 @@
 import json
-
 from data.plugins.astrbot_plugin_anti_withdrawal.gewechat import GewechatManager
 from data.plugins.astrbot_plugin_anti_withdrawal.send_manager import SendManager
 from data.plugins.astrbot_plugin_anti_withdrawal.parse import MessageParser
@@ -24,18 +23,23 @@ def get_nickname(conf: AstrBotConfig) -> str:
     return ""
 
 
+def with_project_path(file: str) -> str:
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
+
+
 @register("anti_withdrawal", "NiceAir", "一个简单的微信防撤回插件", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
-        self.gewechat_manager = GewechatManager(os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                             "gewechat_group_map.json"))
-        self.message_queue = RecentMessageQueue()
-        self.message_parser = MessageParser()
-        self.manager = SendManager(context, os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                                         "user_manager_file.json"),
-                                   os.path.join(os.path.dirname(os.path.abspath(__file__)), "want_to_receive_map.json"))
+        try:
+            self.gewechat_manager = GewechatManager(with_project_path("gewechat_group_map.json"))
+            self.message_queue = RecentMessageQueue(with_project_path("persist_file.json"))
+            self.message_parser = MessageParser()
+            self.manager = SendManager(context, with_project_path("user_manager_file.json"),
+                                       with_project_path("want_to_receive_map.json"))
+        except Exception as e:
+            logger.error(f"防撤回插件加载失败, {e}")
 
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
