@@ -5,15 +5,19 @@ import os
 import traceback
 from astrbot.api.event import AstrMessageEvent, MessageEventResult
 from data.plugins.astrbot_plugin_anti_withdrawal.error import command_error_handler
+from astrbot.core.utils.shared_preferences import SharedPreferences
+
+white_list_flag = "in_white_list:"
 
 
 class SendManager:
-    def __init__(self, context, user_manager_file):
+    def __init__(self, context, user_manager_file, path):
         super().__init__()
         self.context = context
         self.user_manager_file = user_manager_file
         self.send_targets = {}
         self.load_manager()
+        self.want_to_receive_map = SharedPreferences(path=path)
 
     def is_admin(self, event: AstrMessageEvent) -> bool:
         return event.role == "admin"
@@ -67,6 +71,34 @@ class SendManager:
             logger.info(f"cancel_send_target failed, user:{user}, err: {e}")
         return
 
+    def set_white_list(self, platform, group_id, uid) -> bool:
+        try:
+            user = platform + "_" + uid
+            if self.send_targets.get(user, "") == "":
+                self.send_targets[user] = white_list_flag + group_id
+                self.save_manager()
+            return True
+        except Exception as e:
+            logger.error(f"set_send_target failed: {e}")
+            return False
+
+    def set_want_to_receive(self, event: AstrMessageEvent) -> bool:
+        try:
+            user = self.parse_user_id(event)
+            session = self.normalize_session_id(event)
+            self.want_to_receive_map.put(f"want_to_receive_{user}", session)
+            return True
+        except Exception as e:
+            logger.info(f"set_want_to_receive failed, err: {e}")
+            return False
+
+    def want_to_receive_session(self, user) -> str:
+        try:
+            return self.want_to_receive_map.get(f"want_to_receive_{user}")
+        except Exception as e:
+            logger.info(f"set_want_to_receive failed, err: {e}")
+            return ""
+
     @command_error_handler
     async def handle_send_target(
             self, event: AstrMessageEvent
@@ -87,8 +119,41 @@ class SendManager:
         self.cancel_send_target(event)
         yield event.plain_result("好的, 已取消")
 
-    async def deal_send_withdrawal(self, text, img) -> None:
+    @command_error_handler
+    async def handle_set_white_list(
+            self, event: AstrMessageEvent
+    ) -> AsyncGenerator[MessageEventResult, None]:
+        if not self.is_admin(event):
+            yield event.plain_result("权限不足")
+            return
+
+        message = event.message_obj.message_str
+        info = message.split(' ')
+        if len(info) != 3:
+            yield event.plain_result("输入参数错误")
+            return
+        group_id, uid = info[1], info[2]
+        if group_id == "" or uid == "":
+            yield event.plain_result("输入参数错误")
+            return
+
+        if self.set_white_list(event.get_platform_name(), group_id, uid):
+            yield event.plain_result("好的, 已设置")
+        else:
+            yield event.plain_result("服务器出错")
+
+    @command_error_handler
+    async def handle_want_to_receive(
+            self, event: AstrMessageEvent
+    ) -> AsyncGenerator[MessageEventResult, None]:
+        if self.set_want_to_receive(event):
+            yield event.plain_result("有了就发你哦")
+        else:
+            yield event.plain_result("失败")
+
+    async def deal_send_withdrawal(self, out_put) -> None:
         try:
+            text = out_put.get('content', "")
             # 创建消息段列表
             from astrbot.api.message_components import Plain, Image
             message_segments = [Plain(text)]
@@ -97,8 +162,16 @@ class SendManager:
             from astrbot.api.event import MessageChain
             message_chain = MessageChain(message_segments)
 
-            for _, session in self.send_targets.items():
+            for user, session in self.send_targets.items():
                 try:
+                    if session.startswith(white_list_flag):
+                        cur_group_id = out_put.get('group_id', "")
+                        target_group_id = session[len(white_list_flag):]
+                        if cur_group_id != "" and cur_group_id == target_group_id:
+                            session = self.want_to_receive_session(user)
+                        else:
+                            continue
+
                     await self.context.send_message(session, message_chain)
                     logger.info(f"已向 {session} 发送被撤回的消息")
                 except Exception as e:
