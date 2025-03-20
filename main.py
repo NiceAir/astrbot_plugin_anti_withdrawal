@@ -10,7 +10,6 @@ from astrbot.api import logger
 from astrbot.api.all import event_message_type, EventMessageType
 import os
 from astrbot.api.event.filter import permission_type, PermissionType
-from astrbot.api.message_components import *
 
 
 def get_nickname(conf: AstrBotConfig) -> str:
@@ -49,10 +48,7 @@ class MyPlugin(Star):
         #     return
         try:
             if event.get_platform_name() == "gewechat":
-                item = event.get_messages()
-                if isinstance(item, Image):
-                    logger.info(item.path)
-                simple_msg = self.message_parser.parse_message_obj(event.is_private_chat(),
+                simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
                                                                    event.message_obj.raw_message)
                 if simple_msg['is_withdrawal']:
                     group_name = self.gewechat_manager.get_group_name(event)

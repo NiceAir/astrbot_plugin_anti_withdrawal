@@ -5,7 +5,7 @@ import time
 import logging
 import re
 from datetime import datetime
-from astrbot.core import sp
+from astrbot.api.message_components import *
 
 
 def parse_msg_type(msg_type_code) -> str:
@@ -50,6 +50,8 @@ class MessageParser(AstrBotMessage):
             "content": tmp_dict.get('content', 0),
             "replacemsg": tmp_dict.get('replacemsg', ""),
             'timestamp': time.time(),
+            "img_paths": tmp_dict.get('img_paths', []),
+            "voice_paths": tmp_dict.get('voice_paths', []),
         }
         return msg
 
@@ -64,6 +66,7 @@ class MessageParser(AstrBotMessage):
             else:
                 content = withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
 
+
             content = content + "\n" + history_msg['content']
             return {
                 "content": content,
@@ -75,9 +78,10 @@ class MessageParser(AstrBotMessage):
                 "group_id": group_id,
             }
 
-    def parse_message_obj(self, is_private_chat, raw_message: object) -> {}:
+    def parse_message_obj(self,event: AstrMessageEvent, is_private_chat, raw_message: object) -> {}:
         msg = {
             "is_withdrawal": False,
+            "img_paths":[],
         }
 
         try:
@@ -104,6 +108,14 @@ class MessageParser(AstrBotMessage):
 
             elif msg_type == 1:
                 msg['content'] = data
+            elif msg_type == 3:
+                for item in event.get_messages():
+                    if isinstance(item, Image):
+                        msg['img_paths'].append(item.path)
+            elif msg_type == 34:
+                for item in event.get_messages():
+                    if isinstance(item, Record):
+                        msg['voice_paths'].append(item.path)
             else:
                 msg['content'] = "消息类型:【" + parse_msg_type(msg_type) + "】无法解析"
 
