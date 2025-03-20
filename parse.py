@@ -32,11 +32,10 @@ class MessageParser(AstrBotMessage):
         }
         return msg
 
-    def parse_send_message(self, history_msg, withdrawal_info, group_name) -> {}:
+    def parse_send_message(self, history_msg, withdrawal_info, group_name, group_id) -> {}:
         try:
             dt_object = datetime.fromtimestamp(history_msg['timestamp'])
             readable_time = dt_object.strftime("%Y-%m-%d %H:%M:%S.%f")
-
 
             if group_name != "":
                 content = "在群聊 " + group_name + " 中"
@@ -47,11 +46,14 @@ class MessageParser(AstrBotMessage):
             if history_msg['msg_type'] == 1:
                 content = content + "\n" + history_msg['content']
             return {
-                "content": content
+                "content": content,
+                "group_id": group_id,
             }
         except Exception as e:
             logging.error(e)
-            return {}
+            return {
+                "group_id": group_id,
+            }
 
     def parse_message_obj(self, is_private_chat, raw_message: object) -> {}:
         msg = {
