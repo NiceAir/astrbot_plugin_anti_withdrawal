@@ -59,7 +59,7 @@ class MyPlugin(Star):
                     logger.info(f"withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                 else:
                     self.message_queue.add_message(simple_msg, event)
-                    self.message_queue.print_msg_queue()
+                    # self.message_queue.print_msg_queue()
         except Exception as e:
             logger.error(e)
 

@@ -8,6 +8,27 @@ from datetime import datetime
 from astrbot.core import sp
 
 
+def parse_msg_type(msg_type_code) -> str:
+    match msg_type_code:
+        case 1:
+            return "文本"
+        case 3:
+            return "图片"
+        case 34:
+            return "语音"
+        case 42:
+            return "名片"
+        case 43:
+            return "视频"
+        case 47:
+            return "emoji表情"
+        case 49:
+            return "链接或文件或小程序或引用"
+
+        case _:
+            return "未知"
+
+
 class MessageParser(AstrBotMessage):
     def __init__(self):
         super().__init__()
@@ -43,8 +64,7 @@ class MessageParser(AstrBotMessage):
             else:
                 content = withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
 
-            if history_msg['msg_type'] == 1:
-                content = content + "\n" + history_msg['content']
+            content = content + "\n" + history_msg['content']
             return {
                 "content": content,
                 "group_id": group_id,
@@ -65,6 +85,9 @@ class MessageParser(AstrBotMessage):
 
             content = raw_message.get("Content", "")
             data = content.get('string', "")
+            if not is_private_chat and re.match(r'^.*?:\n', data):
+                data = data.split(':\n', 1)[-1]
+
             if msg_type == 10002:
                 if re.match(r'^.*?:\n<sysmsg', data):
                     split_index = data.find('<')
@@ -78,10 +101,11 @@ class MessageParser(AstrBotMessage):
                         msg['withdrawal_msgid'] = root.find('.//msgid').text
                     else:
                         msg['withdrawal_msgid'] = root.find('.//newmsgid').text
+
             elif msg_type == 1:
                 msg['content'] = data
             else:
-                msg['content'] = "消息类型:" + str(msg_type) + "无法解析"
+                msg['content'] = "消息类型:【" + parse_msg_type(msg_type) + "】无法解析"
 
             msg['msg_type'] = msg_type
         except Exception as e:
