@@ -18,12 +18,11 @@ class GewechatManager():
 
     def get_group_name(self, event: AstrMessageEvent):
         key = "group_name_" + event.get_platform_name() + "_" + event.get_group_id()
-        group_name=  self.group_map.get(key, "")
+        group_name = self.group_map.get(key, "")
         if group_name == "":
             group_name = self.get_group_name_from_gewechat(event, event.get_group_id())
             self.group_map.put(key, group_name)
         return group_name
-
 
     def get_gewechat_client(self, event: AstrMessageEvent) -> SimpleGewechatClient:
         try:
@@ -36,7 +35,6 @@ class GewechatManager():
             return self.gewechat_client
         except Exception as e:
             logger.error(f"get_gewechat_client failed, {e}")
-
 
     def get_group_name_from_gewechat(self, event: AstrMessageEvent, group_id) -> str:
         try:
@@ -51,11 +49,11 @@ class GewechatManager():
             })
             headers['Content-Type'] = 'application/json'
 
-            res = requests.post(base_url , headers=headers, data=payload)
+            res = requests.post(base_url, headers=headers, data=payload)
             if res.status_code != requests.codes.ok:
                 logger.error(f"get_group_name_from_gewechat failed, {res.status_code}, url:{base_url}")
                 return group_id
-            
+
             res_json = res.json()
             return str(res_json.get("data", {}).get("nickName", group_id))
 
