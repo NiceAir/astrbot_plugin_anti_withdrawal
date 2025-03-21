@@ -48,11 +48,15 @@ class MyPlugin(Star):
             return
         try:
             if event.get_platform_name() == "gewechat":
-                simple_msg = self.message_parser.parse_message_obj(event.is_private_chat(),
+                simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
                                                                    event.message_obj.raw_message)
                 if simple_msg['is_withdrawal']:
                     group_name = self.gewechat_manager.get_group_name(event)
                     history_msg = self.message_queue.find_message(simple_msg['withdrawal_msgid'])
+                    if history_msg is None:
+                        logger.info(f"撤回了一条消息但是没有找到匹配项: {simple_msg}")
+                        return
+
                     out_put = self.message_parser.parse_send_message(history_msg, simple_msg, group_name,
                                                                      event.get_group_id())
                     await self.manager.deal_send_withdrawal(out_put)
