@@ -47,7 +47,7 @@ class MessageParser(AstrBotMessage):
             "sender_name": event.get_sender_name(),
             "msg_id": msg_id,
             "msg_type": raw_message.get('MsgType', 0),
-            "content": tmp_dict.get('content', 0),
+            "content": tmp_dict.get('content', ""),
             "replacemsg": tmp_dict.get('replacemsg', ""),
             'timestamp': time.time(),
             "img_paths": tmp_dict.get('img_paths', []),
@@ -66,11 +66,15 @@ class MessageParser(AstrBotMessage):
             else:
                 content = withdrawal_info['replacemsg'] + "\n发送时间: " + readable_time
 
+            if history_msg.get('content', "") != "":
+                content = content + "\n" + history_msg['content']
 
-            content = content + "\n" + history_msg['content']
             return {
                 "content": content,
                 "group_id": group_id,
+                "img_paths": history_msg.get('img_paths', []),
+                "voice_paths": history_msg.get('voice_paths', []),
+
             }
         except Exception as e:
             logging.error(e)
@@ -78,10 +82,11 @@ class MessageParser(AstrBotMessage):
                 "group_id": group_id,
             }
 
-    def parse_message_obj(self,event: AstrMessageEvent, is_private_chat, raw_message: object) -> {}:
+    def parse_message_obj(self, event: AstrMessageEvent, is_private_chat, raw_message: object) -> {}:
         msg = {
             "is_withdrawal": False,
-            "img_paths":[],
+            "img_paths": [],
+            'voice_paths': [],
         }
 
         try:
@@ -111,11 +116,12 @@ class MessageParser(AstrBotMessage):
             elif msg_type == 3:
                 for item in event.get_messages():
                     if isinstance(item, Image):
-                        msg['img_paths'].append(item.path)
-            elif msg_type == 34:
-                for item in event.get_messages():
-                    if isinstance(item, Record):
-                        msg['voice_paths'].append(item.path)
+                        msg['img_paths'].append(item.file)
+            # todo: astrbot 暂不支持直接使用缓存的语音文件
+            # elif msg_type == 34:
+            #     for item in event.get_messages():
+            #         if isinstance(item, Record):
+            #             msg['voice_paths'].append(item.file)
             else:
                 msg['content'] = "消息类型:【" + parse_msg_type(msg_type) + "】无法解析"
 

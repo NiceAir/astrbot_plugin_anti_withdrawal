@@ -44,8 +44,8 @@ class MyPlugin(Star):
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
         # 如果是管理者发的消息，那么不记录不处理
-        # if event.is_admin():
-        #     return
+        if event.is_admin():
+            return
         try:
             if event.get_platform_name() == "gewechat":
                 simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),

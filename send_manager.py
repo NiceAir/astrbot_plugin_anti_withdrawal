@@ -155,8 +155,15 @@ class SendManager:
         try:
             text = out_put.get('content', "")
             # 创建消息段列表
-            from astrbot.api.message_components import Plain, Image
+            from astrbot.api.message_components import Plain, Image, Record
             message_segments = [Plain(text)]
+
+            img_paths = out_put.get('img_paths', [])
+            for img_path in img_paths:
+                message_segments.append(Image(file=img_path, url=img_path))
+            voice_paths = out_put.get('voice_paths', [])
+            for voice_path in voice_paths:
+                message_segments.append(Record(file=voice_path, url=voice_path))
 
             # 使用send_message发送消息
             from astrbot.api.event import MessageChain
