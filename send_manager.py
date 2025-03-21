@@ -87,6 +87,7 @@ class SendManager:
             user = self.parse_user_id(event)
             session = self.normalize_session_id(event)
             self.want_to_receive_map.put(f"want_to_receive_{user}", session)
+            logger.info(f"有人申请要撤回的消息{user}， {session}")
             return True
         except Exception as e:
             logger.info(f"set_want_to_receive failed, err: {e}")
