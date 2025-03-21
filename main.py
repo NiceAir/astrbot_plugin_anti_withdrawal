@@ -60,7 +60,8 @@ class MyPlugin(Star):
                     out_put = self.message_parser.parse_send_message(history_msg, simple_msg, group_name,
                                                                      event.get_group_id())
                     await self.manager.deal_send_withdrawal(out_put)
-                    logger.info(f"withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
+                    logger.info(
+                        f"group_name:{group_name}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                 else:
                     self.message_queue.add_message(simple_msg, event)
                     # self.message_queue.print_msg_queue()
