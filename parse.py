@@ -6,6 +6,7 @@ import logging
 import re
 from datetime import datetime
 from astrbot.api.message_components import *
+from astrbot.core.message.components import BaseMessageComponent
 
 
 def parse_msg_type(msg_type_code) -> str:
@@ -87,10 +88,13 @@ class MessageParser(AstrBotMessage):
             "is_withdrawal": False,
             "img_paths": [],
             'voice_paths': [],
+            "message": None,
         }
 
         try:
             msg_type = raw_message.get('MsgType', 0)
+
+            messages = event.get_messages()
 
             content = raw_message.get("Content", "")
             data = content.get('string', "")
@@ -117,6 +121,8 @@ class MessageParser(AstrBotMessage):
                 for item in event.get_messages():
                     if isinstance(item, Image):
                         msg['img_paths'].append(item.file)
+            elif msg_type == 47 and len(messages) != 0:
+                msg['message'] = messages[0]
             # todo: astrbot 暂不支持直接使用缓存的语音文件
             # elif msg_type == 34:
             #     for item in event.get_messages():

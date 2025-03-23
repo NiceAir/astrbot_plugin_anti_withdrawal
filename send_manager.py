@@ -1,11 +1,11 @@
 from typing import AsyncGenerator
 from astrbot.api import logger
-import json
-import os
 import traceback
-from astrbot.api.event import AstrMessageEvent, MessageEventResult
+from astrbot.api.event import AstrMessageEvent, MessageEventResult, MessageChain
 from data.plugins.astrbot_plugin_anti_withdrawal.error import command_error_handler
 from astrbot.core.utils.shared_preferences import SharedPreferences
+from astrbot.api.message_components import *
+from typing import List
 
 white_list_flag = "in_white_list:"
 
@@ -152,23 +152,28 @@ class SendManager:
         else:
             yield event.plain_result("失败")
 
+    def make_message_list(self, out_put) -> List[BaseMessageComponent]:
+        text = out_put.get('content', "")
+        # 创建消息段列表
+        message_segments = [Plain(text)]
+
+        img_paths = out_put.get('img_paths', [])
+        for img_path in img_paths:
+            message_segments.append(Image(file=img_path, url=img_path))
+        voice_paths = out_put.get('voice_paths', [])
+        for voice_path in voice_paths:
+            message_segments.append(Record(file=voice_path, url=voice_path))
+
+        message = out_put.get('message', None)
+        if message:
+            message_segments.append(message)
+
+        return message_segments
+
     async def deal_send_withdrawal(self, out_put) -> None:
         try:
-            text = out_put.get('content', "")
-            # 创建消息段列表
-            from astrbot.api.message_components import Plain, Image, Record
-            message_segments = [Plain(text)]
-
-            img_paths = out_put.get('img_paths', [])
-            for img_path in img_paths:
-                message_segments.append(Image(file=img_path, url=img_path))
-            voice_paths = out_put.get('voice_paths', [])
-            for voice_path in voice_paths:
-                message_segments.append(Record(file=voice_path, url=voice_path))
-
-            # 使用send_message发送消息
-            from astrbot.api.event import MessageChain
-            message_chain = MessageChain(message_segments)
+            message_list = self.make_message_list(out_put)
+            message_chain = MessageChain(message_list)
 
             for user, session in self.send_targets.items():
                 try:
