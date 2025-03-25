@@ -41,21 +41,21 @@ class MyPlugin(Star):
         except Exception as e:
             logger.error(f"防撤回插件加载失败, {e}")
 
-    @event_message_type(EventMessageType.ALL, priority=2)
-    async def resend_all_message(self, event: AstrMessageEvent):
-        if event.get_platform_name() == "gewechat":
-            if event.get_sender_id() == 'wxid_qmy0i8rjurtx22':
-                simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
-                                                                   event.message_obj.raw_message)
-                msg_chan = self.manager.make_message_list(simple_msg)
-                logger.info(f"{json.dumps(event.message_obj.raw_message, ensure_ascii=False)}")
-                yield event.chain_result(msg_chan)
+    # @event_message_type(EventMessageType.ALL, priority=2)
+    # async def resend_all_message(self, event: AstrMessageEvent):
+    #     if event.get_platform_name() == "gewechat":
+    #         if event.get_sender_id() == 'wxid_qmy0i8rjurtx22':
+    #             simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
+    #                                                                event.message_obj.raw_message)
+    #             msg_chan = self.manager.make_message_list(simple_msg)
+    #             logger.info(f"{json.dumps(event.message_obj.raw_message, ensure_ascii=False)}")
+    #             yield event.chain_result(msg_chan)
 
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
         # 如果是管理者发的消息，那么不记录不处理
-        if event.is_admin():
-            return
+        # if event.is_admin():
+        #     return
         try:
             if event.get_platform_name() == "gewechat":
                 simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),

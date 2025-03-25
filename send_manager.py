@@ -157,16 +157,28 @@ class SendManager:
         # 创建消息段列表
         message_segments = [Plain(text)]
 
-        img_paths = out_put.get('img_paths', [])
-        for img_path in img_paths:
-            message_segments.append(Image(file=img_path, url=img_path))
-        voice_paths = out_put.get('voice_paths', [])
-        for voice_path in voice_paths:
-            message_segments.append(Record(file=voice_path, url=voice_path))
+        message_type = out_put.get('message_type', "")
+        type_message_str = out_put.get('type_message_str', "")
+        if type_message_str == "":
+            return message_segments
 
-        message = out_put.get('message', None)
-        if message:
-            message_segments.append(message)
+        type_massage = json.loads(type_message_str)
+        match message_type:
+            case "text":
+                message_segments.append(Plain(type_message_str))
+            case "image":
+                file = type_massage.get("file", "")
+                url = type_massage.get("url", "")
+                message_segments.append(Image(file=file, url=url))
+            case "video":
+                cover = type_massage.get("cover", "")
+                message_segments.append(Video(file="", cover=cover))
+            case "emoji":
+                md5 = type_massage.get("md5", "")
+                md5_len = type_massage.get("md5_len", 0)
+                message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
+            case "reply":
+                message_segments.append(Plain(f"引用的话，说"))
 
         return message_segments
 
