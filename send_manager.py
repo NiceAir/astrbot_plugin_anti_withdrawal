@@ -1,11 +1,11 @@
 from typing import AsyncGenerator
 from astrbot.api import logger
-import json
-import os
 import traceback
-from astrbot.api.event import AstrMessageEvent, MessageEventResult
+from astrbot.api.event import AstrMessageEvent, MessageEventResult, MessageChain
 from data.plugins.astrbot_plugin_anti_withdrawal.error import command_error_handler
 from astrbot.core.utils.shared_preferences import SharedPreferences
+from astrbot.api.message_components import *
+from typing import List
 
 white_list_flag = "in_white_list:"
 
@@ -152,23 +152,42 @@ class SendManager:
         else:
             yield event.plain_result("失败")
 
+    def make_message_list(self, out_put) -> List[BaseMessageComponent]:
+        text = out_put.get('content', "")
+        # 创建消息段列表
+        message_segments = [Plain(text)]
+
+        message_type = out_put.get('message_type', "")
+        type_message_str = out_put.get('type_message_str', "")
+        if type_message_str == "":
+            return message_segments
+
+        type_massage = json.loads(type_message_str)
+        match message_type:
+            case "text":
+                message_segments.append(Plain(type_message_str))
+            case "image":
+                file = type_massage.get("file", "")
+                url = type_massage.get("url", "")
+                message_segments.append(Image(file=file, url=url))
+            case "video":
+                cover = type_massage.get("cover", "")
+                message_segments.append(Video(file="", cover=cover))
+            case "emoji":
+                md5 = type_massage.get("md5", "")
+                md5_len = type_massage.get("md5_len", 0)
+                message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
+            case "reply":
+                sender_nickname = type_massage.get("sender_nickname", "")
+                message_str = type_massage.get("message_str", "")
+                message_segments.append(Plain(f"引用{sender_nickname}的消息，说:{message_str}"))
+
+        return message_segments
+
     async def deal_send_withdrawal(self, out_put) -> None:
         try:
-            text = out_put.get('content', "")
-            # 创建消息段列表
-            from astrbot.api.message_components import Plain, Image, Record
-            message_segments = [Plain(text)]
-
-            img_paths = out_put.get('img_paths', [])
-            for img_path in img_paths:
-                message_segments.append(Image(file=img_path, url=img_path))
-            voice_paths = out_put.get('voice_paths', [])
-            for voice_path in voice_paths:
-                message_segments.append(Record(file=voice_path, url=voice_path))
-
-            # 使用send_message发送消息
-            from astrbot.api.event import MessageChain
-            message_chain = MessageChain(message_segments)
+            message_list = self.make_message_list(out_put)
+            message_chain = MessageChain(message_list)
 
             for user, session in self.send_targets.items():
                 try:

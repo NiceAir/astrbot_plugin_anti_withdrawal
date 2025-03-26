@@ -1,3 +1,5 @@
+import json
+
 from astrbot.api.event import AstrMessageEvent
 from astrbot.core.platform import AstrBotMessage
 import xml.etree.ElementTree as ET
@@ -6,6 +8,7 @@ import logging
 import re
 from datetime import datetime
 from astrbot.api.message_components import *
+from astrbot.core.message.components import BaseMessageComponent
 
 
 def parse_msg_type(msg_type_code) -> str:
@@ -50,8 +53,8 @@ class MessageParser(AstrBotMessage):
             "content": tmp_dict.get('content', ""),
             "replacemsg": tmp_dict.get('replacemsg', ""),
             'timestamp': time.time(),
-            "img_paths": tmp_dict.get('img_paths', []),
-            "voice_paths": tmp_dict.get('voice_paths', []),
+            "message_type": tmp_dict.get('message_type', ""),
+            "type_message_str": tmp_dict.get('type_message_str', ""),
         }
         return msg
 
@@ -72,9 +75,8 @@ class MessageParser(AstrBotMessage):
             return {
                 "content": content,
                 "group_id": group_id,
-                "img_paths": history_msg.get('img_paths', []),
-                "voice_paths": history_msg.get('voice_paths', []),
-
+                "message_type": history_msg.get('message_type', "text"),
+                "type_message_str": history_msg['type_message_str'],
             }
         except Exception as e:
             logging.error(e)
@@ -85,13 +87,20 @@ class MessageParser(AstrBotMessage):
     def parse_message_obj(self, event: AstrMessageEvent, is_private_chat, raw_message: object) -> {}:
         msg = {
             "is_withdrawal": False,
-            "img_paths": [],
-            'voice_paths': [],
+            "content": "",
+            "message_type": "text",
+            # "img_paths": [],
+            # 'voice_paths': [],
+            "type_message_str": "",
         }
 
         try:
             msg_type = raw_message.get('MsgType', 0)
 
+            messages = event.get_messages()
+            message = None
+            if len(messages) != 0:
+                message = messages[0]
             content = raw_message.get("Content", "")
             data = content.get('string', "")
             if not is_private_chat and re.match(r'^.*?:\n', data):
@@ -114,9 +123,24 @@ class MessageParser(AstrBotMessage):
             elif msg_type == 1:
                 msg['content'] = data
             elif msg_type == 3:
-                for item in event.get_messages():
-                    if isinstance(item, Image):
-                        msg['img_paths'].append(item.file)
+                if isinstance(message, Image):
+                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
+                    msg['message_type'] = "image"
+            elif msg_type == 43:  # 视频
+                if isinstance(message, Video):
+                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
+                    msg['message_type'] = "video"
+            elif msg_type == 47:
+                if isinstance(message, WechatEmoji):  # emoji
+                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
+                    msg['message_type'] = "emoji"
+            elif msg_type == 49:  # 很多，其中就有引用
+                if isinstance(message, Reply):
+                    m = vars(message)
+                    m.pop("chain")
+                    msg['type_message_str'] = json.dumps(m, ensure_ascii=False)
+                    msg['message_type'] = "reply"
+
             # todo: astrbot 暂不支持直接使用缓存的语音文件
             # elif msg_type == 34:
             #     for item in event.get_messages():
