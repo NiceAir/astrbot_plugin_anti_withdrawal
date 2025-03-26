@@ -53,8 +53,8 @@ class MessageParser(AstrBotMessage):
             "content": tmp_dict.get('content', ""),
             "replacemsg": tmp_dict.get('replacemsg', ""),
             'timestamp': time.time(),
-            "img_paths": tmp_dict.get('img_paths', []),
-            "voice_paths": tmp_dict.get('voice_paths', []),
+            "message_type": tmp_dict.get('message_type', ""),
+            "type_message_str": tmp_dict.get('type_message_str', ""),
         }
         return msg
 
@@ -97,7 +97,10 @@ class MessageParser(AstrBotMessage):
         try:
             msg_type = raw_message.get('MsgType', 0)
 
-            message = event.get_messages()[0]
+            messages = event.get_messages()
+            message = None
+            if len(messages) != 0:
+                message = messages[0]
             content = raw_message.get("Content", "")
             data = content.get('string', "")
             if not is_private_chat and re.match(r'^.*?:\n', data):
@@ -133,7 +136,9 @@ class MessageParser(AstrBotMessage):
                     msg['message_type'] = "emoji"
             elif msg_type == 49:  # 很多，其中就有引用
                 if isinstance(message, Reply):
-                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
+                    m = vars(message)
+                    m.pop("chain")
+                    msg['type_message_str'] = json.dumps(m, ensure_ascii=False)
                     msg['message_type'] = "reply"
 
             # todo: astrbot 暂不支持直接使用缓存的语音文件

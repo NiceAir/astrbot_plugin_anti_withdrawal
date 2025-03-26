@@ -178,7 +178,9 @@ class SendManager:
                 md5_len = type_massage.get("md5_len", 0)
                 message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
             case "reply":
-                message_segments.append(Plain(f"引用的话，说"))
+                sender_nickname = type_massage.get("sender_nickname", "")
+                message_str = type_massage.get("message_str", "")
+                message_segments.append(Plain(f"引用{sender_nickname}的消息，说:{message_str}"))
 
         return message_segments
 
