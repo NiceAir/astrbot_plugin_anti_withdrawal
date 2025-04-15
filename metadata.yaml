@@ -1,6 +1,6 @@
 name: anti_withdrawal # 这是你的插件的唯一识别名。
 desc: 防撤回插件，目前只支持微信私聊群聊的消息，将撤回的消息记录并发送给设定的人。 # 插件简短描述
 help: 。 # 插件的帮助信息
-version: v1.4 # 插件版本号。格式：v1.1.1 或者 v1.1
+version: v1.5 # 插件版本号。格式：v1.1.1 或者 v1.1
 author: NiceAir # 作者
 repo: https://github.com/NiceAir/astrbot_plugin_anti_withdrawal # 插件的仓库地址
