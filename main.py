@@ -43,26 +43,34 @@ class MyPlugin(Star):
 
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
-        # 如果是管理者发的消息，那么不记录不处理
-        if event.is_admin():
-            return
         try:
             if event.get_platform_name() == "gewechat":
                 simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
                                                                    event.message_obj.raw_message)
+                group_id = event.get_group_id()
+                group_name = self.gewechat_manager.get_group_name(event)
+
                 if simple_msg['is_withdrawal']:
-                    group_name = self.gewechat_manager.get_group_name(event)
                     history_msg = self.message_queue.find_message(simple_msg['withdrawal_msgid'])
                     if history_msg is None:
-                        logger.info(f"撤回了一条消息但是没有找到匹配项: {simple_msg}")
+                        logger.info(f"撤回了一条消息但是没有找到匹配项: {simple_msg}, group_name:{group_name}, group_id:{group_id}")
+                        return
+
+                    # 如果是管理者发的消息，那么不处理，仅打印日志
+                    if event.is_admin():
+                        logger.info(
+                            f"group_name:{group_name}, group_id:{group_id}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                         return
 
                     out_put = self.message_parser.parse_send_message(history_msg, simple_msg, group_name,
-                                                                     event.get_group_id())
+                                                                     group_id)
                     await self.manager.deal_send_withdrawal(out_put)
                     logger.info(
-                        f"group_name:{group_name}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
+                        f"group_name:{group_name}, group_id:{group_id}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                 else:
+                    # 如果是管理者发的消息，那么不记录
+                    if event.is_admin():
+                        return
                     self.message_queue.add_message(simple_msg, event)
                     # self.message_queue.print_msg_queue()
         except Exception as e:
