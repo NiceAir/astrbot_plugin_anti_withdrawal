@@ -37,6 +37,7 @@ class MyPlugin(Star):
             self.message_queue = RecentMessageQueue(with_project_path("persist_file.json"))
             self.message_parser = MessageParser()
             self.manager = SendManager(context, with_project_path("user_manager_file.json"),
+                                       with_project_path("white_list_file.json"),
                                        with_project_path("want_to_receive_map.json"))
         except Exception as e:
             logger.error(f"防撤回插件加载失败, {e}")

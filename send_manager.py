@@ -93,7 +93,7 @@ class SendManager:
         try:
             user = platform + "_" + uid
             # 添加白名单，一个用户可以有多个群
-            if self.white_list.get(user, None) == None:
+            if self.white_list.get(user, None) is None:
                 self.white_list[user] = []
             self.white_list[user].append(group_id)
             self.save_manager_v2()
