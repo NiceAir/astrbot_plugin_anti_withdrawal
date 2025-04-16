@@ -11,12 +11,15 @@ white_list_flag = "in_white_list:"
 
 
 class SendManager:
-    def __init__(self, context, user_manager_file, path):
+    def __init__(self, context, user_manager_file, white_list_file, path):
         super().__init__()
         self.context = context
         self.user_manager_file = user_manager_file
+        self.white_list_file = white_list_file
         self.send_targets = {}
+        self.white_list = {}
         self.load_manager()
+        self.load_manager_v2()
         self.want_to_receive_map = SharedPreferences(path=path)
 
     def is_admin(self, event: AstrMessageEvent) -> bool:
@@ -45,10 +48,25 @@ class SendManager:
             except Exception as e:
                 logger.error(f"加载撤回发送主体失败: {e}")
 
+    def load_manager_v2(self):
+        if os.path.exists(self.white_list_file):
+            try:
+                with open(self.white_list_file, 'r') as f:
+                    self.white_list = json.load(f)
+            except Exception as e:
+                logger.error(f"加载撤回发送主体失败: {e}")
+
     def save_manager(self):
         try:
             with open(self.user_manager_file, 'w') as f:
                 json.dump(self.send_targets, f)
+        except Exception as e:
+            logger.error(f"持久化撤回发送主体失败: {e}")
+
+    def save_manager_v2(self):
+        try:
+            with open(self.white_list_file, 'w') as f:
+                json.dump(self.white_list, f)
         except Exception as e:
             logger.error(f"持久化撤回发送主体失败: {e}")
 
@@ -74,9 +92,15 @@ class SendManager:
     def set_white_list(self, platform, group_id, uid) -> bool:
         try:
             user = platform + "_" + uid
-            if self.send_targets.get(user, "") == "":
-                self.send_targets[user] = white_list_flag + group_id
-                self.save_manager()
+            # 添加白名单，一个用户可以有多个群
+            if self.white_list.get(user, None) == None:
+                self.white_list[user] = []
+            self.white_list[user].append(group_id)
+            self.save_manager_v2()
+
+            # if self.send_targets.get(user, "") == "":
+            #     self.send_targets[user] = white_list_flag + group_id
+            #     self.save_manager()
             return True
         except Exception as e:
             logger.error(f"set_send_target failed: {e}")
@@ -185,26 +209,29 @@ class SendManager:
         return message_segments
 
     async def deal_send_withdrawal(self, out_put) -> None:
+        cur_group_id = out_put.get('group_id', "")
         try:
             message_list = self.make_message_list(out_put)
             message_chain = MessageChain(message_list)
 
             for user, session in self.send_targets.items():
                 try:
-                    if session.startswith(white_list_flag):
-                        cur_group_id = out_put.get('group_id', "")
-                        target_group_id = session[len(white_list_flag):]
-                        if cur_group_id != "" and cur_group_id == target_group_id:
-                            session = self.want_to_receive_session(user)
-                        else:
-                            continue
-
                     await self.context.send_message(session, message_chain)
                     logger.info(f"已向 {session} 发送被撤回的消息")
                 except Exception as e:
                     logger.error(f"向 {session} 发送消息失败：{str(e)}")
                     logger.error(traceback.format_exc())
                     return
+                
+            for user, group_ids in self.white_list.items():
+                for group_id in group_ids:
+                    try:
+                        if cur_group_id != "" and cur_group_id == group_id:
+                            session = self.want_to_receive_session(user)
+                            await self.context.send_message(session, message_chain)
+                            logger.info(f"已向 {session} 发送被撤回的消息")
+                    except Exception as e:
+                        logger.error(f"向 {session} 发送消息失败：{str(e)}")
 
         except Exception as e:
             logger.error(f"执行任务时出错: {str(e)}")
