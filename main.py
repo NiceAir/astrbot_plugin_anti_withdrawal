@@ -101,6 +101,14 @@ class MyPlugin(Star):
         async for result in self.manager.handle_set_white_list(event):
             yield result
 
+    @permission_type(PermissionType.ADMIN)
+    @event_message_type(EventMessageType.PRIVATE_MESSAGE)
+    @filter.command("移除白名单")
+    async def remove_white_list(self, event: AstrMessageEvent):
+        """ 移除白名单里的某人，只有管理者有权限设置 """
+        async for result in self.manager.handle_remove_white_list(event):
+            yield result
+
     @event_message_type(EventMessageType.PRIVATE_MESSAGE)
     @filter.command("我要撤回的消息")
     async def want_to_receive(self, event: AstrMessageEvent):

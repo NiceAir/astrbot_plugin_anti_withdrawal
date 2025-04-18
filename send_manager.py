@@ -104,7 +104,25 @@ class SendManager:
             return True
         except Exception as e:
             logger.error(f"set_send_target failed: {e}")
-            return False
+        return False
+
+    def remove_white_list(self, platform, uid, group_id) -> bool:
+        try:
+            user = platform + "_" + uid
+            if self.white_list.get(user, None) is None:
+                return False
+            if group_id == "":
+                del self.white_list[user]
+                return True
+
+            groups = self.white_list[user]
+            new_groups = list(filter(lambda x: x != group_id, groups))
+            self.white_list[user] = new_groups
+            self.save_manager_v2()
+            return True
+        except Exception as e:
+            logger.error(f"remove_white_list failed: {e}")
+        return False
 
     def set_want_to_receive(self, event: AstrMessageEvent) -> bool:
         try:
@@ -164,6 +182,33 @@ class SendManager:
 
         if self.set_white_list(event.get_platform_name(), group_id, uid):
             yield event.plain_result("好的, 已设置")
+        else:
+            yield event.plain_result("服务器出错")
+
+    @command_error_handler
+    async def handle_remove_white_list(
+            self, event: AstrMessageEvent
+    ) -> AsyncGenerator[MessageEventResult, None]:
+        if not self.is_admin(event):
+            yield event.plain_result("权限不足")
+            return
+        
+        message = event.message_obj.message_str
+        info = message.split(' ')
+        if len(info) != 3 and len(info) != 2:
+            yield event.plain_result("输入参数错误")
+            return
+        uid = info[1]
+        group_id = ""
+        if len(info) == 3:
+            group_id = info[2]
+
+        if uid == "":
+            yield event.plain_result("输入参数错误")
+            return
+        
+        if self.remove_white_list(event.get_platform_name(), uid, group_id):
+            yield event.plain_result("好的, 已移除")
         else:
             yield event.plain_result("服务器出错")
 
