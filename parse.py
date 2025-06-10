@@ -40,16 +40,16 @@ class MessageParser(AstrBotMessage):
     def parse_gewechat_message(self, tmp_dict, event: AstrMessageEvent) -> {}:
         raw_message = event.message_obj.raw_message
         group_id = event.get_group_id()
-        msg_id = raw_message.get('MsgId', 0)
+        msg_id = raw_message.get('msg_id', 0)
         if group_id != "":
-            msg_id = raw_message.get('NewMsgId', 0)
+            msg_id = raw_message.get('new_msg_id', 0)
 
         msg = {
             "group_id": group_id,
             "sender_id": event.get_sender_id(),
             "sender_name": event.get_sender_name(),
             "msg_id": msg_id,
-            "msg_type": raw_message.get('MsgType', 0),
+            "msg_type": raw_message.get('msg_type', 0),
             "content": tmp_dict.get('content', ""),
             "replacemsg": tmp_dict.get('replacemsg', ""),
             'timestamp': time.time(),
@@ -95,14 +95,14 @@ class MessageParser(AstrBotMessage):
         }
 
         try:
-            msg_type = raw_message.get('MsgType', 0)
+            msg_type = raw_message.get('msg_type', 0)
 
             messages = event.get_messages()
             message = None
             if len(messages) != 0:
                 message = messages[0]
-            content = raw_message.get("Content", "")
-            data = content.get('string', "")
+            content = raw_message.get("content", "")
+            data = content.get('str', "")
             if not is_private_chat and re.match(r'^.*?:\n', data):
                 data = data.split(':\n', 1)[-1]
 

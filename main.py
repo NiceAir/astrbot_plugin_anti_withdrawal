@@ -1,5 +1,5 @@
 import json
-from data.plugins.astrbot_plugin_anti_withdrawal.gewechat import GewechatManager
+from data.plugins.astrbot_plugin_anti_withdrawal.wechatpadpro import WechatpadproManager
 from data.plugins.astrbot_plugin_anti_withdrawal.send_manager import SendManager
 from data.plugins.astrbot_plugin_anti_withdrawal.parse import MessageParser
 from data.plugins.astrbot_plugin_anti_withdrawal.rencent_message import RecentMessageQueue
@@ -27,13 +27,16 @@ def with_project_path(file: str) -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
 
 
+manager_not_show = True
+
+
 @register("anti_withdrawal", "NiceAir", "一个简单的微信防撤回插件", "1.0.0")
 class MyPlugin(Star):
     def __init__(self, context: Context):
         super().__init__(context)
 
         try:
-            self.gewechat_manager = GewechatManager(with_project_path("gewechat_group_map.json"))
+            self.group_manager = WechatpadproManager(with_project_path("group_name_map.json"))
             self.message_queue = RecentMessageQueue(with_project_path("persist_file.json"))
             self.message_parser = MessageParser()
             self.manager = SendManager(context, with_project_path("user_manager_file.json"),
@@ -45,20 +48,22 @@ class MyPlugin(Star):
     @event_message_type(EventMessageType.ALL, priority=3)
     async def on_all_message(self, event: AstrMessageEvent):
         try:
-            if event.get_platform_name() == "gewechat":
+
+            if event.get_platform_name() == "wechatpadpro":
                 simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
                                                                    event.message_obj.raw_message)
                 group_id = event.get_group_id()
-                group_name = self.gewechat_manager.get_group_name(event)
+                group_name = await self.group_manager.get_group_name(event)
 
                 if simple_msg['is_withdrawal']:
                     history_msg = self.message_queue.find_message(simple_msg['withdrawal_msgid'])
                     if history_msg is None:
-                        logger.info(f"撤回了一条消息但是没有找到匹配项: {simple_msg}, group_name:{group_name}, group_id:{group_id}")
+                        logger.info(
+                            f"撤回了一条消息但是没有找到匹配项: {simple_msg}, group_name:{group_name}, group_id:{group_id}")
                         return
 
                     # 如果是管理者发的消息，那么不处理，仅打印日志
-                    if event.is_admin():
+                    if event.is_admin() and manager_not_show:
                         logger.info(
                             f"group_name:{group_name}, group_id:{group_id}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                         return
@@ -70,10 +75,10 @@ class MyPlugin(Star):
                         f"group_name:{group_name}, group_id:{group_id}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                 else:
                     # 如果是管理者发的消息，那么不记录
-                    if event.is_admin():
+                    if event.is_admin() and manager_not_show:
                         return
                     self.message_queue.add_message(simple_msg, event)
-                    # self.message_queue.print_msg_queue()
+                    #self.message_queue.print_msg_queue()
         except Exception as e:
             logger.error(e)
 
