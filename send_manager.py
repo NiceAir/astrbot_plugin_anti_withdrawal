@@ -221,7 +221,7 @@ class SendManager:
         else:
             yield event.plain_result("失败")
 
-    def make_message_list(self, out_put) -> List[BaseMessageComponent]:
+    def make_message_list(self, out_put, event: AstrMessageEvent) -> List[BaseMessageComponent]:
         text = out_put.get('content', "")
         # 创建消息段列表
         message_segments = [Plain(text)]
@@ -236,27 +236,26 @@ class SendManager:
             case "text":
                 message_segments.append(Plain(type_message_str))
             case "image":
-                file = type_massage.get("file", "")
-                url = type_massage.get("url", "")
-                message_segments.append(Image(file=file, url=url))
-            case "video":
-                cover = type_massage.get("cover", "")
-                message_segments.append(Video(file="", cover=cover))
-            case "emoji":
-                md5 = type_massage.get("md5", "")
-                md5_len = type_massage.get("md5_len", 0)
-                message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
-            case "reply":
-                sender_nickname = type_massage.get("sender_nickname", "")
-                message_str = type_massage.get("message_str", "")
-                message_segments.append(Plain(f"引用{sender_nickname}的消息，说:{message_str}"))
+                file_path = type_massage.get("image_path", "")
+                message_segments.append(Image(file=file_path, url=file_path))
+            # case "video":
+            #     cover = type_massage.get("cover", "")
+            #     message_segments.append(Video(file="", cover=cover))
+            # case "emoji":
+            #     md5 = type_massage.get("md5", "")
+            #     md5_len = type_massage.get("md5_len", 0)
+            #     message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
+            # case "reply":
+            #     sender_nickname = type_massage.get("sender_nickname", "")
+            #     message_str = type_massage.get("message_str", "")
+            #     message_segments.append(Plain(f"引用{sender_nickname}的消息，说:{message_str}"))
 
         return message_segments
 
-    async def deal_send_withdrawal(self, out_put) -> None:
+    async def deal_send_withdrawal(self, out_put, event: AstrMessageEvent) -> None:
         cur_group_id = out_put.get('group_id', "")
         try:
-            message_list = self.make_message_list(out_put)
+            message_list = self.make_message_list(out_put, event)
             message_chain = MessageChain(message_list)
 
             for user, session in self.send_targets.items():

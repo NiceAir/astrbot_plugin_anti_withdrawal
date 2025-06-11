@@ -52,6 +52,7 @@ class MyPlugin(Star):
             if event.get_platform_name() == "wechatpadpro":
                 simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
                                                                    event.message_obj.raw_message)
+
                 group_id = event.get_group_id()
                 group_name = await self.group_manager.get_group_name(event)
 
@@ -70,7 +71,7 @@ class MyPlugin(Star):
 
                     out_put = self.message_parser.parse_send_message(history_msg, simple_msg, group_name,
                                                                      group_id)
-                    await self.manager.deal_send_withdrawal(out_put)
+                    await self.manager.deal_send_withdrawal(out_put, event)
                     logger.info(
                         f"group_name:{group_name}, group_id:{group_id}, withdrawal_info:{json.dumps(history_msg, ensure_ascii=False)}")
                 else:
