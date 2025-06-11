@@ -139,10 +139,8 @@ class MessageParser(AstrBotMessage):
                     msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
                     msg['message_type'] = "emoji"
             elif msg_type == 49:  # 很多，其中就有引用
-                if isinstance(message, Reply):
-                    m = vars(message)
-                    m.pop("chain")
-                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
+                if isinstance(message, Plain):
+                    msg['type_message_str'] = json.dumps({"message_str": event.message_str}, ensure_ascii=False)
                     msg['message_type'] = "reply"
             # elif msg_type == 34:
             #     if isinstance(message, Record):  # 语音
