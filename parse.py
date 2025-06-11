@@ -130,26 +130,24 @@ class MessageParser(AstrBotMessage):
                 if isinstance(message, Image):
                     msg['type_message_str'] = json.dumps({"image_path": message.path}, ensure_ascii=False)
                     msg['message_type'] = "image"
-            elif msg_type == 43:  # 视频
-                if isinstance(message, Video):
-                    msg['type_message_str'] = ""
-                    msg['message_type'] = "video"
+            # elif msg_type == 43:  # 视频
+            #     if isinstance(message, Video):
+            #         msg['type_message_str'] = ""
+            #         msg['message_type'] = "video"
             elif msg_type == 47:
                 if isinstance(message, WechatEmoji):  # emoji
-                    msg['type_message_str'] = ""
+                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
                     msg['message_type'] = "emoji"
             elif msg_type == 49:  # 很多，其中就有引用
                 if isinstance(message, Reply):
                     m = vars(message)
                     m.pop("chain")
-                    msg['type_message_str'] = ""
+                    msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
                     msg['message_type'] = "reply"
-
-            # todo: astrbot 暂不支持直接使用缓存的语音文件
             # elif msg_type == 34:
-            #     for item in event.get_messages():
-            #         if isinstance(item, Record):
-            #             msg['voice_paths'].append(item.file)
+            #     if isinstance(message, Record):  # 语音
+            #         msg['type_message_str'] = json.dumps(vars(message), ensure_ascii=False)
+            #         msg['message_type'] = "voice"
             else:
                 msg['content'] = "消息类型:【" + parse_msg_type(msg_type) + "】无法解析"
 

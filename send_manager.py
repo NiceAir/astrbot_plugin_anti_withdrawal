@@ -230,25 +230,30 @@ class SendManager:
         type_message_str = out_put.get('type_message_str', "")
         if type_message_str == "":
             return message_segments
-
+        new_msg_id = out_put.get('new_msg_id', 0)
         type_massage = json.loads(type_message_str)
         match message_type:
             case "text":
                 message_segments.append(Plain(type_message_str))
             case "image":
-                file_path = type_massage.get("image_path", "")
-                message_segments.append(Image(file=file_path, url=file_path))
+                # file_path = type_massage.get("image_path", "")
+                # message_segments.append(Image(file=file_path, url=file_path))
+                from astrbot.core.platform.sources.wechatpadpro.wechatpadpro_message_event import \
+                    WeChatPadProMessageEvent
+                assert isinstance(event, WeChatPadProMessageEvent)
+                image_bs64_data = event.adapter.cached_images.get(str(new_msg_id), "")
+                message_segments.append(Image.fromBase64(image_bs64_data))
             # case "video":
             #     cover = type_massage.get("cover", "")
             #     message_segments.append(Video(file="", cover=cover))
-            # case "emoji":
-            #     md5 = type_massage.get("md5", "")
-            #     md5_len = type_massage.get("md5_len", 0)
-            #     message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
-            # case "reply":
-            #     sender_nickname = type_massage.get("sender_nickname", "")
-            #     message_str = type_massage.get("message_str", "")
-            #     message_segments.append(Plain(f"引用{sender_nickname}的消息，说:{message_str}"))
+            case "emoji":
+                md5 = type_massage.get("md5", "")
+                md5_len = type_massage.get("md5_len", 0)
+                message_segments.append(WechatEmoji(md5=md5, md5_len=md5_len))
+            case "reply":
+                sender_nickname = type_massage.get("sender_nickname", "")
+                message_str = type_massage.get("message_str", "")
+                message_segments.append(Plain(f"引用{sender_nickname}的消息，说:{message_str}"))
 
         return message_segments
 

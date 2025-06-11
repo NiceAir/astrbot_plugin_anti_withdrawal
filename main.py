@@ -27,7 +27,7 @@ def with_project_path(file: str) -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), file)
 
 
-manager_not_show = True
+manager_not_show = False
 
 
 @register("anti_withdrawal", "NiceAir", "一个简单的微信防撤回插件", "1.0.0")
