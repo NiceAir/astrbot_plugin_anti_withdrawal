@@ -128,7 +128,7 @@ class MessageParser(AstrBotMessage):
                 msg['content'] = data
             elif msg_type == 3:
                 if isinstance(message, Image):
-                    msg['type_message_str'] = json.dumps({"image_path": message.path}, ensure_ascii=False)
+                    msg['type_message_str'] = json.dumps({"image_path": message.url}, ensure_ascii=False)
                     msg['message_type'] = "image"
             # elif msg_type == 43:  # 视频
             #     if isinstance(message, Video):

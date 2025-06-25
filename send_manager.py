@@ -236,13 +236,15 @@ class SendManager:
             case "text":
                 message_segments.append(Plain(type_message_str))
             case "image":
-                # file_path = type_massage.get("image_path", "")
-                # message_segments.append(Image(file=file_path, url=file_path))
-                from astrbot.core.platform.sources.wechatpadpro.wechatpadpro_message_event import \
-                    WeChatPadProMessageEvent
-                assert isinstance(event, WeChatPadProMessageEvent)
-                image_bs64_data = event.adapter.cached_images.get(str(new_msg_id), "")
-                message_segments.append(Image.fromBase64(image_bs64_data))
+                file_path = type_massage.get("image_path", "")
+                if file_path != "":
+                    message_segments.append(Image(file=file_path, url=file_path))
+                else:
+                    from astrbot.core.platform.sources.wechatpadpro.wechatpadpro_message_event import \
+                        WeChatPadProMessageEvent
+                    assert isinstance(event, WeChatPadProMessageEvent)
+                    image_bs64_data = event.adapter.cached_images.get(str(new_msg_id), "")
+                    message_segments.append(Image.fromBase64(image_bs64_data))
             # case "video":
             #     cover = type_massage.get("cover", "")
             #     message_segments.append(Video(file="", cover=cover))
