@@ -50,12 +50,8 @@ class MyPlugin(Star):
         try:
 
             if event.get_platform_name() == "wechatpadpro":
-                if event.get_sender_id() != "wxid_qmy0i8rjurtx22":
-                    return
-
                 simple_msg = self.message_parser.parse_message_obj(event, event.is_private_chat(),
                                                                    event.message_obj.raw_message)
-
 
                 group_id = event.get_group_id()
                 group_name = await self.group_manager.get_group_name(event)
